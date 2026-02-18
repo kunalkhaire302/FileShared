@@ -8,21 +8,8 @@
     <link rel="stylesheet" href="style/dstyle.css">
     <link rel="stylesheet" href="style/loader.css">
     <link rel="stylesheet" href="style/nav.css">
+    <link rel="stylesheet" href="style/shared.css">
     <link rel="shortcut icon" href="./assests/favicon.ico" type="image/x-icon">
-    <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const token = localStorage.getItem("token"); // Attempt to retrieve the token
-            const loginButton = document.getElementById("login-button"); // Select the login button
-
-            if (token) {
-                // If token exists, hide the login button
-                loginButton.style.display = 'none';
-            } else {
-                // If no token, make sure the login button is visible
-                loginButton.style.display = 'block';
-            }
-        });
-    </script>
 </head>
 
 <body>
@@ -38,15 +25,19 @@
                 <li id="logo-in"><a href="index.html"><img src="assests/mainlogo.png" alt="" style="width: 40px;"></a>
                 </li>
                 <li class="logo" id="logo-in">FileShare</li>
-                <li><a href="index.html" style="color:white;">Home</a></li>
+                <li><a href="index.html">Home</a></li>
                 <li><a href="upload.html">Upload</a></li>
                 <li><a href="download.html">Download</a></li>
+                <li><a href="dashboard.html" id="dashboard-link" style="display:none;">Dashboard</a></li>
                 <li><a href="abus.html">About Us</a></li>
-                <li><a href="login.html" class="login-btn" id="login-button"
-                        onmouseover="this.style.color='white'; ">Login</a></li>
+                <li><a href="login.html" class="login-btn" id="login-button">Login</a></li>
+                <li><a href="#" class="login-btn" id="logout-button" style="display:none; background:#ff1744;"
+                        onclick="logout()">Logout</a></li>
             </ul>
         </nav>
     </header>
+
+    <!-- Loading Spinner -->
     <div id="loading" style="display:none;" class="loading-container">
         <div class="spinner">
             <div></div>
@@ -58,19 +49,38 @@
         </div>
         <p style="color: white; margin: 30px;">Fetching, please wait...</p>
     </div>
+
     <!-- Download Section -->
-    <section class=" download-section">
+    <section class="download-section">
         <div class="container">
-            <h1>Enter the Code to Download Your File</h1>
-            <p>Please enter the code provided to you to access the file download:</p>
-            <form id="download-form" onsubmit="return false;">
-                <input type="text" id="download-code" placeholder="Enter code here..." required>
-                <button type="button" id="download-button" disabled onclick="verifyCode()">Download</button>
-            </form>
-            <p id="error-message" style="color:red; display:none; margin: 10px;">Incorrect code. Please
-                try again.</p>
-            <a id="download-link" href="#" style="display:none;" download>Click here to download your
-                file</a>
+            <h1>Download Your File</h1>
+            <p>Enter the code provided to you:</p>
+
+            <input type="text" id="download-code" placeholder="Enter code here..." required>
+            <button type="button" id="lookup-button" disabled onclick="lookupFile()">🔍 Look Up</button>
+
+            <!-- File Info Card -->
+            <div class="file-info-card" id="file-info-card">
+                <div class="info-row"><span class="info-label">File</span><span class="info-value"
+                        id="info-name"></span></div>
+                <div class="info-row"><span class="info-label">Size</span><span class="info-value"
+                        id="info-size"></span></div>
+                <div class="info-row"><span class="info-label">Downloads</span><span class="info-value"
+                        id="info-downloads"></span></div>
+                <div class="info-row"><span class="info-label">Expires</span><span class="info-value"
+                        id="info-expires"></span></div>
+            </div>
+
+            <!-- Password Section -->
+            <div class="password-section" id="password-section">
+                <p style="color:#ff9100; font-size:0.9rem;">🔒 This file is password protected</p>
+                <input type="password" id="file-password" placeholder="Enter file password...">
+            </div>
+
+            <button type="button" id="download-button" style="display:none;" onclick="downloadFile()">⬇️
+                Download</button>
+
+            <p id="error-message" style="color:red; display:none; margin: 10px;"></p>
         </div>
     </section>
 
@@ -79,73 +89,137 @@
         <p>&copy; 2024 FileShare. All rights reserved.</p>
     </footer>
 
+    <script src="./script/nav.js"></script>
+    <script src="./script/common.js"></script>
     <script>
-        // Enable download button when code is entered
-        document.getElementById('download-code').addEventListener('input', function () {
-            const codeInput = document.getElementById('download-code');
-            const downloadButton = document.getElementById('download-button');
+        const codeInput = document.getElementById('download-code');
+        const lookupBtn = document.getElementById('lookup-button');
+        const downloadBtn = document.getElementById('download-button');
+        const fileInfoCard = document.getElementById('file-info-card');
+        const passwordSection = document.getElementById('password-section');
+        const errorMsg = document.getElementById('error-message');
 
-            // Enable the button only if the input is not empty
-            downloadButton.disabled = codeInput.value.trim() === '';
+        // Auto-fill code from URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('code')) {
+            codeInput.value = urlParams.get('code');
+            lookupBtn.disabled = false;
+            // Auto lookup
+            setTimeout(lookupFile, 500);
+        }
+
+        codeInput.addEventListener('input', () => {
+            lookupBtn.disabled = codeInput.value.trim() === '';
+            // Reset state
+            fileInfoCard.classList.remove('active');
+            passwordSection.classList.remove('active');
+            downloadBtn.style.display = 'none';
+            errorMsg.style.display = 'none';
         });
 
-        async function verifyCode() {
-            const code = document.getElementById('download-code').value.trim();
-            const loadingSpinner = document.getElementById('loading');
+        async function lookupFile() {
+            const code = codeInput.value.trim();
+            if (!code) return;
 
-            // Show the loading spinner while fetching the file
+            const loadingSpinner = document.getElementById('loading');
             loadingSpinner.style.display = 'flex';
+            errorMsg.style.display = 'none';
 
             try {
-                // Send GET request to the download endpoint
-                const response = await fetch(`/download/${encodeURIComponent(code)}`, {
-                    method: 'GET'
-                });
+                const response = await fetch(`/api/file-info/${encodeURIComponent(code)}`);
+                loadingSpinner.style.display = 'none';
 
                 if (response.ok) {
-                    const contentDisposition = response.headers.get('Content-Disposition');
-                    const originalFileName = contentDisposition.split('filename=')[1].replace(/"/g, ''); // Extract filename from headers
-                    const blob = await response.blob(); // Get the binary data
-                    const url = window.URL.createObjectURL(blob); // Create a URL for the blob
+                    const file = await response.json();
+                    document.getElementById('info-name').textContent = file.file_name;
+                    document.getElementById('info-size').textContent = formatFileSize(file.file_size);
+                    document.getElementById('info-downloads').textContent = file.download_count + ' times';
+                    document.getElementById('info-expires').textContent = file.expires_at ? timeRemaining(file.expires_at) : 'Never';
 
-                    // Create a link to download the file
-                    const downloadLink = document.getElementById('download-link');
-                    downloadLink.href = url;
-                    downloadLink.style.display = 'block'; // Make link visible
-                    downloadLink.style.margin = '10px';
-                    downloadLink.textContent = 'Click here to download your file';
-                    downloadLink.download = originalFileName; // Set the original filename for download
+                    fileInfoCard.classList.add('active');
+                    downloadBtn.style.display = 'block';
 
-                    // Clear any error message
-                    document.getElementById('error-message').style.display = 'none';
+                    if (file.has_password) {
+                        passwordSection.classList.add('active');
+                    } else {
+                        passwordSection.classList.remove('active');
+                    }
+
+                    showToast('File found!', 'success');
                 } else {
-                    // Show error message
-                    const errorText = await response.text(); // Get error response text
-                    document.getElementById('error-message').textContent = errorText; // Display the error message
-                    document.getElementById('error-message').style.display = 'block'; // Show error message
-                    document.getElementById('download-link').style.display = 'none'; // Hide download link
+                    const err = await response.json();
+                    errorMsg.textContent = err.message || 'File not found';
+                    errorMsg.style.display = 'block';
+                    fileInfoCard.classList.remove('active');
+                    downloadBtn.style.display = 'none';
+                    showToast(err.message || 'File not found', 'error');
                 }
             } catch (error) {
-                // Handle network errors or other exceptions
-                document.getElementById('error-message').textContent = 'Network error. Please try again.';
-                document.getElementById('error-message').style.display = 'block'; // Show error message
-                document.getElementById('download-link').style.display = 'none'; // Hide download link
-            } finally {
-                // Hide the loading spinner once the fetch is complete
-                loadingSpinner.style.display = 'none'; // Hide spinner
+                loadingSpinner.style.display = 'none';
+                errorMsg.textContent = 'Network error. Please try again.';
+                errorMsg.style.display = 'block';
+                showToast('Network error', 'error');
             }
         }
 
-        // Show the loading spinner when the page is loading
-        document.getElementById('loading').style.display = 'flex'; // Show spinner
+        async function downloadFile() {
+            const code = codeInput.value.trim();
+            const password = document.getElementById('file-password')?.value || '';
+            const loadingSpinner = document.getElementById('loading');
+            loadingSpinner.style.display = 'flex';
 
-        // Hide the loading spinner once the page is fully loaded
-        window.addEventListener('load', function () {
-            document.getElementById('loading').style.display = 'none'; // Hide spinner
+            try {
+                const response = await fetch(`/download/${encodeURIComponent(code)}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+
+                loadingSpinner.style.display = 'none';
+
+                if (response.ok) {
+                    const contentDisposition = response.headers.get('Content-Disposition');
+                    let fileName = 'download';
+                    if (contentDisposition) {
+                        const match = contentDisposition.match(/filename="?(.+?)"?$/);
+                        if (match) fileName = match[1];
+                    }
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    window.URL.revokeObjectURL(url);
+                    showToast('Download started!', 'success');
+
+                    // Update download count display
+                    const countEl = document.getElementById('info-downloads');
+                    const current = parseInt(countEl.textContent) || 0;
+                    countEl.textContent = (current + 1) + ' times';
+                } else {
+                    const err = await response.json();
+                    if (err.requiresPassword) {
+                        passwordSection.classList.add('active');
+                        showToast('Please enter the file password', 'warning');
+                    } else {
+                        showToast(err.message || 'Download failed', 'error');
+                    }
+                }
+            } catch (error) {
+                loadingSpinner.style.display = 'none';
+                showToast('Network error. Please try again.', 'error');
+            }
+        }
+
+        // Page load spinner
+        document.getElementById('loading').style.display = 'flex';
+        window.addEventListener('load', () => {
+            document.getElementById('loading').style.display = 'none';
         });
     </script>
-
-    <script src="./script/nav.js"></script>
 </body>
 
 </html>

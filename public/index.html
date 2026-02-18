@@ -4,27 +4,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Online File Sharing</title>
+    <title>FileShare — Fast & Secure File Sharing</title>
+    <meta name="description"
+        content="Share files instantly with end-to-end security. Upload, share a code, and let anyone download.">
     <link rel="stylesheet" href="style/hstyle.css">
     <link rel="stylesheet" href="style/nav.css">
+    <link rel="stylesheet" href="style/shared.css">
     <link rel="stylesheet" href="style/loader.css">
     <link rel="shortcut icon" href="./assests/favicon.ico" type="image/x-icon">
-    <script>
-
-        document.addEventListener("DOMContentLoaded", () => {
-            const token = localStorage.getItem("token"); // Attempt to retrieve the token
-            const loginButton = document.getElementById("login-button"); // Select the login button
-
-            if (token) {
-                // If token exists, hide the login button
-                loginButton.style.display = 'none';
-            } else {
-                // If no token, make sure the login button is visible
-                loginButton.style.display = 'block';
-            }
-        });
-    </script>
-
 </head>
 
 <body>
@@ -32,7 +19,7 @@
     <header>
         <nav class="navbar">
             <div id="logo-main">
-                <a href="index.html"><img src="assests/mainlogo.png" alt="" style="width: 40px;"></a>
+                <a href="index.html"><img src="assests/mainlogo.png" alt="FileShare" style="width: 40px;"></a>
             </div>
             <div class="menu-toggle" onclick="hide()">&#9776;</div>
             <div class="logo" id="logo-mainn">FileShare</div>
@@ -40,16 +27,18 @@
                 <li id="logo-in"><a href="index.html"><img src="assests/mainlogo.png" alt="" style="width: 40px;"></a>
                 </li>
                 <li class="logo" id="logo-in">FileShare</li>
-                <li><a href="index.html" style="color:white;">Home</a></li>
+                <li><a href="index.html">Home</a></li>
                 <li><a href="upload.html">Upload</a></li>
                 <li><a href="download.html">Download</a></li>
+                <li><a href="dashboard.html" id="dashboard-link" style="display:none;">Dashboard</a></li>
                 <li><a href="abus.html">About Us</a></li>
-                <li><a href="login.html" class="login-btn" id="login-button"
-                        onmouseover="this.style.color='white'; ">Login</a></li>
+                <li><a href="login.html" class="login-btn" id="login-button">Login</a></li>
+                <li><a href="#" class="login-btn" id="logout-button" style="display:none; background:#ff1744;"
+                        onclick="logout()">Logout</a></li>
             </ul>
         </nav>
     </header>
-    <!-- menu toggle handled by nav.js -->
+
     <!-- Loading Spinner -->
     <div id="loading" style="display:none;" class="loading-container">
         <div class="spinner">
@@ -61,6 +50,7 @@
             <div></div>
         </div>
     </div>
+
     <!-- Hero Section -->
     <section class="hero">
         <div class="hero-content">
@@ -93,17 +83,15 @@
     <footer>
         <p>&copy; 2024 FileShare. All rights reserved.</p>
     </footer>
-    <script>
-        // Show the loading spinner when the page is loading
-        document.getElementById('loading').style.display = 'flex'; // Show spinner
 
-        // Hide the loading spinner once the page is fully loaded
+    <script>
+        document.getElementById('loading').style.display = 'flex';
         window.addEventListener('load', function () {
-            document.getElementById('loading').style.display = 'none'; // Hide spinner
+            document.getElementById('loading').style.display = 'none';
         });
     </script>
     <script src="./script/nav.js"></script>
-
+    <script src="./script/common.js"></script>
 </body>
 
 </html>

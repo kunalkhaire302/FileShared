@@ -8,26 +8,11 @@
     <link rel="stylesheet" href="style/ustyle.css">
     <link rel="stylesheet" href="style/loader.css">
     <link rel="stylesheet" href="style/nav.css">
+    <link rel="stylesheet" href="style/shared.css">
     <link rel="shortcut icon" href="./assests/favicon.ico" type="image/x-icon">
-    <script>
-
-        document.addEventListener("DOMContentLoaded", () => {
-            const token = localStorage.getItem("token"); // Attempt to retrieve the token
-            const loginButton = document.getElementById("login-button"); // Select the login button
-
-            if (token) {
-                // If token exists, hide the login button
-                loginButton.style.display = 'none';
-            } else {
-                // If no token, make sure the login button is visible
-                loginButton.style.display = 'block';
-            }
-        });
-    </script>
 </head>
 
 <body>
-
     <!-- Header -->
     <header>
         <nav class="navbar">
@@ -40,12 +25,14 @@
                 <li id="logo-in"><a href="index.html"><img src="assests/mainlogo.png" alt="" style="width: 40px;"></a>
                 </li>
                 <li class="logo" id="logo-in">FileShare</li>
-                <li><a href="index.html" style="color:white;">Home</a></li>
+                <li><a href="index.html">Home</a></li>
                 <li><a href="upload.html">Upload</a></li>
                 <li><a href="download.html">Download</a></li>
+                <li><a href="dashboard.html" id="dashboard-link" style="display:none;">Dashboard</a></li>
                 <li><a href="abus.html">About Us</a></li>
-                <li><a href="login.html" class="login-btn" id="login-button"
-                        onmouseover="this.style.color='white'; ">Login</a></li>
+                <li><a href="login.html" class="login-btn" id="login-button">Login</a></li>
+                <li><a href="#" class="login-btn" id="logout-button" style="display:none; background:#ff1744;"
+                        onclick="logout()">Logout</a></li>
             </ul>
         </nav>
     </header>
@@ -67,101 +54,201 @@
     <section class="upload-section">
         <div class="container">
             <h1>Upload Your File</h1>
-            <form id="upload-form" enctype="multipart/form-data" method="POST" action="/upload">
-                <input type="file" name="file" id="file" required>
-                <button type="submit" id="upload-button" disabled>Upload</button>
-            </form>
-            <p id="upload-message"></p>
+
+            <!-- Drag & Drop Zone -->
+            <div class="drop-zone" id="drop-zone">
+                <div class="drop-icon">📁</div>
+                <div class="drop-text">Drag & drop your file here, or <span id="browse-trigger">browse</span></div>
+                <div class="file-preview" id="file-preview">
+                    <span class="file-name" id="preview-name"></span><br>
+                    <span class="file-size" id="preview-size"></span>
+                </div>
+            </div>
+
+            <input type="file" name="file" id="file" required style="display:none;">
+
+            <!-- File Options -->
+            <div class="file-options" id="file-options" style="display:none;">
+                <div class="option-row">
+                    <label>🔒 Password:</label>
+                    <input type="password" id="file-password" placeholder="Optional">
+                </div>
+                <div class="option-row">
+                    <label>⏱️ Expires in:</label>
+                    <select id="expiry-days">
+                        <option value="1">1 day</option>
+                        <option value="3">3 days</option>
+                        <option value="7" selected>7 days</option>
+                        <option value="14">14 days</option>
+                        <option value="30">30 days</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="progress-container" id="progress-container">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="progress-text" id="progress-text">0%</div>
+            </div>
+
+            <button type="button" id="upload-button" disabled>Upload</button>
         </div>
     </section>
+
+    <!-- Upload Result Modal -->
+    <div class="modal-overlay" id="upload-modal">
+        <div class="modal">
+            <h2>✅ File Uploaded!</h2>
+            <div class="code-display" id="modal-code"></div>
+            <div class="qr-code" id="modal-qr"></div>
+            <div class="file-info" id="modal-info"></div>
+            <div class="btn-row">
+                <button class="btn btn-primary" id="copy-code-btn">📋 Copy Code</button>
+                <button class="btn btn-secondary"
+                    onclick="document.getElementById('upload-modal').classList.remove('active')">Close</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Footer -->
     <footer>
         <p>&copy; 2024 FileShare. All rights reserved.</p>
     </footer>
 
+    <script src="./script/nav.js"></script>
+    <script src="./script/common.js"></script>
     <script>
-        const form = document.getElementById('upload-form');
+        const dropZone = document.getElementById('drop-zone');
         const fileInput = document.getElementById('file');
         const uploadButton = document.getElementById('upload-button');
-        const loadingContainer = document.getElementById('loading');
+        const browseTrigger = document.getElementById('browse-trigger');
+        const filePreview = document.getElementById('file-preview');
+        const previewName = document.getElementById('preview-name');
+        const previewSize = document.getElementById('preview-size');
+        const fileOptions = document.getElementById('file-options');
+        const progressContainer = document.getElementById('progress-container');
+        const progressFill = document.getElementById('progress-fill');
+        const progressText = document.getElementById('progress-text');
 
-        // Get upload count from cookies (or initialize if not set)
-        let uploadCount = getCookie('uploadCount') ? parseInt(getCookie('uploadCount')) : 0;
+        // Browse trigger
+        browseTrigger.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('click', () => fileInput.click());
 
-        // Enable upload button when a file is chosen
-        fileInput.addEventListener('change', () => {
-            if (fileInput.files.length > 0) {
-                if (uploadCount >= 5 && !isUserLoggedIn()) {
-                    alert('You need to register or log in to upload more files.');
-                    // Redirect to login page
-                    window.location.href = '/login.html';
-                } else {
-                    uploadButton.disabled = false; // Enable the button
-                }
-            } else {
-                uploadButton.disabled = true; // Keep it disabled
+        // Drag & drop
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                fileInput.files = e.dataTransfer.files;
+                handleFileSelect(e.dataTransfer.files[0]);
             }
         });
 
-        form.addEventListener('submit', async (e) => {
-            e.preventDefault(); // Prevent the default form submission
-            const formData = new FormData(form); // Create FormData object
+        // File input change
+        fileInput.addEventListener('change', () => {
+            if (fileInput.files.length > 0) handleFileSelect(fileInput.files[0]);
+        });
 
-            // Show loading spinner
-            loadingContainer.style.display = 'flex'; // Show loading spinner
+        function handleFileSelect(file) {
+            previewName.textContent = file.name;
+            previewSize.textContent = formatFileSize(file.size);
+            filePreview.classList.add('active');
+            fileOptions.style.display = 'flex';
+            uploadButton.disabled = false;
 
-            // Send POST request to upload file
-            const response = await fetch('/upload', {
-                method: 'POST',
-                body: formData
+            if (file.size > 4 * 1024 * 1024) {
+                showToast('File size exceeds 4MB limit', 'warning');
+                uploadButton.disabled = true;
+            }
+        }
+
+        // Upload with progress
+        uploadButton.addEventListener('click', () => {
+            if (!fileInput.files.length) return;
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            formData.append('filePassword', document.getElementById('file-password').value);
+            formData.append('expiryDays', document.getElementById('expiry-days').value);
+
+            const xhr = new XMLHttpRequest();
+            progressContainer.classList.add('active');
+            uploadButton.disabled = true;
+
+            xhr.upload.addEventListener('progress', (e) => {
+                if (e.lengthComputable) {
+                    const pct = Math.round((e.loaded / e.total) * 100);
+                    progressFill.style.width = pct + '%';
+                    progressText.textContent = pct + '%';
+                }
             });
 
-            // Parse JSON response
-            const result = await response.json();
+            xhr.addEventListener('load', () => {
+                progressContainer.classList.remove('active');
+                uploadButton.disabled = false;
 
-            // Hide loading spinner
-            loadingContainer.style.display = 'none'; // Hide loading spinner
-
-            if (response.ok) {
-                alert(`${result.message} Use this code to download: ${result.uniqueCode}`);
-
-                // Increment upload count and save to cookies
-                uploadCount++;
-                setCookie('uploadCount', uploadCount, 7); // Set for 7 days
-
-                if (uploadCount >= 5 && !isUserLoggedIn()) {
-                    alert('You need to log in to upload more files.');
-                    // Redirect to login page
-                    window.location.href = '/login.html';
+                if (xhr.status === 200) {
+                    const result = JSON.parse(xhr.responseText);
+                    showUploadResult(result);
+                    showToast('File uploaded successfully!', 'success');
+                    // Reset form
+                    fileInput.value = '';
+                    filePreview.classList.remove('active');
+                    fileOptions.style.display = 'none';
+                    uploadButton.disabled = true;
+                    progressFill.style.width = '0%';
+                } else {
+                    try {
+                        const err = JSON.parse(xhr.responseText);
+                        showToast(err.message || 'Upload failed', 'error');
+                    } catch (e) {
+                        showToast('Upload failed', 'error');
+                    }
                 }
-            } else {
-                alert('Error uploading the file.');
-            }
+            });
+
+            xhr.addEventListener('error', () => {
+                progressContainer.classList.remove('active');
+                uploadButton.disabled = false;
+                showToast('Network error. Please try again.', 'error');
+            });
+
+            // Add auth header if logged in
+            xhr.open('POST', '/upload');
+            const token = getToken();
+            if (token) xhr.setRequestHeader('Authorization', 'Bearer ' + token);
+            xhr.send(formData);
         });
 
-        function isUserLoggedIn() {
-            // Check if the JWT token exists in localStorage
-            const token = localStorage.getItem('token');
-            return token !== null; // Return true if token exists, false otherwise
-        }
+        function showUploadResult(result) {
+            const modal = document.getElementById('upload-modal');
+            document.getElementById('modal-code').textContent = result.uniqueCode;
 
-        function setCookie(name, value, days) {
-            const date = new Date();
-            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
-            const expires = "expires=" + date.toUTCString();
-            document.cookie = name + "=" + value + ";" + expires + ";path=/";
-        }
+            // QR code using public API
+            const downloadUrl = window.location.origin + '/download.html?code=' + result.uniqueCode;
+            document.getElementById('modal-qr').innerHTML =
+                `<img src="https://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(downloadUrl)}&size=150x150&bgcolor=ffffff" alt="QR Code" width="150" height="150">`;
 
-        function getCookie(name) {
-            const value = `; ${document.cookie}`;
-            const parts = value.split(`; ${name}=`);
-            if (parts.length === 2) return parts.pop().split(';').shift();
-        }
+            const info = [];
+            info.push(`📄 ${result.fileName} (${formatFileSize(result.fileSize)})`);
+            if (result.expiresAt) info.push(`⏱️ Expires: ${formatDate(result.expiresAt)}`);
+            if (result.hasPassword) info.push('🔒 Password protected');
+            document.getElementById('modal-info').innerHTML = info.join('<br>');
 
+            // Copy button
+            document.getElementById('copy-code-btn').onclick = () => {
+                navigator.clipboard.writeText(result.uniqueCode).then(() => {
+                    showToast('Code copied to clipboard!', 'success');
+                });
+            };
+
+            modal.classList.add('active');
+        }
     </script>
-
-    <script src="./script/nav.js"></script>
 </body>
 
 </html>
