@@ -23,9 +23,33 @@ const pool = new Pool({
     : false
 });
 
-pool.connect()
-  .then(() => console.log("Connected to PostgreSQL"))
-  .catch(err => console.error("Error connecting to PostgreSQL: ", err));
+// Auto-create tables on startup
+async function initDB() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        name VARCHAR(100) NOT NULL,
+        email VARCHAR(100) UNIQUE NOT NULL,
+        password VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS uploads (
+        id SERIAL PRIMARY KEY,
+        file_name VARCHAR(255) NOT NULL,
+        file_data BYTEA NOT NULL,
+        unique_code VARCHAR(100) NOT NULL,
+        upload_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log("Connected to PostgreSQL & tables ready");
+  } catch (err) {
+    console.error("Database init error:", err);
+  }
+}
+initDB();
 
 // Serve static files from the "public" directory
 app.use(express.static("public"));
