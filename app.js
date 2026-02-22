@@ -39,7 +39,7 @@ const pool = new Pool({
 
 // Blocked file extensions
 const BLOCKED_EXTENSIONS = [".exe", ".bat", ".cmd", ".scr", ".pif", ".com", ".vbs", ".js", ".wsh", ".ps1"];
-const MAX_FILE_SIZE = 4 * 1024 * 1024; // 4MB
+const MAX_FILE_SIZE = 1 * 1024 * 1024 * 1024; // 1GB
 
 // Sanitize filename
 function sanitizeFilename(filename) {

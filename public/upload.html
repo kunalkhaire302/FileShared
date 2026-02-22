@@ -160,8 +160,8 @@
             fileOptions.style.display = 'flex';
             uploadButton.disabled = false;
 
-            if (file.size > 4 * 1024 * 1024) {
-                showToast('File size exceeds 4MB limit', 'warning');
+            if (file.size > 1 * 1024 * 1024 * 1024) {
+                showToast('File size exceeds 1GB limit', 'warning');
                 uploadButton.disabled = true;
             }
         }
