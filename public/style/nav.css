@@ -1,6 +1,8 @@
+/* ===== Navbar — Premium Redesign ===== */
+
+/* Reset hidden elements */
 .menu-toggle {
     display: none;
-    /* Hide hamburger menu on larger screens */
 }
 
 #logo-main {
@@ -13,65 +15,141 @@
 
 /* Header */
 header {
-    background-color: rgba(255, 255, 255, 0.1);
-    padding: 10px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: rgba(10, 10, 15, 0.8);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 0 24px;
+    transition: background 0.3s, box-shadow 0.3s;
+}
+
+header:hover {
+    background: rgba(10, 10, 15, 0.92);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.3);
 }
 
 .navbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin: 5px 0;
+    max-width: 1200px;
+    margin: 0 auto;
+    height: 60px;
 }
 
 .logo {
     font-size: 20px;
-    font-weight: bold;
+    font-weight: 700;
     color: #fff;
+    letter-spacing: -0.5px;
 }
 
+/* Nav Links */
 .nav-links {
-    list-style-type: none;
+    list-style: none;
     margin: 0;
+    padding: 0;
     display: flex;
     align-items: center;
-    width: 100%;
-    justify-content: center;
+    gap: 6px;
 }
 
 .nav-links li {
-    margin-left: 20px;
+    margin: 0;
 }
 
 .nav-links a {
-    color: #fff;
+    color: rgba(255, 255, 255, 0.7);
     text-decoration: none;
-    transition: color 0.3s;
+    font-size: 0.9rem;
+    font-weight: 500;
+    padding: 8px 14px;
+    border-radius: 8px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    display: inline-block;
 }
 
 .nav-links a:hover {
-    color: #007aff;
+    color: #fff;
+    background: rgba(255, 255, 255, 0.08);
 }
 
+/* Active link indicator via common.js */
+.nav-links a[style*="color: rgb(0, 122, 255)"],
+.nav-links a[style*="color:#007aff"] {
+    color: #007aff !important;
+    background: rgba(0, 122, 255, 0.1);
+}
+
+/* Underline animation on hover */
+.nav-links a::after {
+    content: '';
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    width: 0;
+    height: 2px;
+    background: linear-gradient(90deg, #007aff, #00c6ff);
+    border-radius: 1px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateX(-50%);
+}
+
+.nav-links a:hover::after {
+    width: 60%;
+}
+
+/* Login Button */
 .login-btn {
-    background-color: #007aff;
-    padding: 5px 15px;
-    border-radius: 5px;
-    color: white;
-    transition: background-color 0.3s;
+    background: linear-gradient(135deg, #007aff, #0056d6) !important;
+    color: #fff !important;
+    padding: 8px 20px !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    font-size: 0.85rem !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 2px 12px rgba(0, 122, 255, 0.25);
+    border: none;
 }
 
 .login-btn:hover {
-    box-shadow: 0 0 2px #ffffff, 0 0 10px #ffffff, 0 0 10px #ffffff, 0 0 10px #ffffff, 0 0 10px #ffffff;
+    background: linear-gradient(135deg, #0066e0, #004abf) !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(0, 122, 255, 0.4) !important;
 }
 
+.login-btn::after {
+    display: none !important;
+}
 
-/* Mobile Styles */
+/* Logout Button Override */
+.login-btn[onclick*="logout"] {
+    background: linear-gradient(135deg, #ff3b5c, #d50032) !important;
+    box-shadow: 0 2px 12px rgba(255, 59, 92, 0.25);
+}
+
+.login-btn[onclick*="logout"]:hover {
+    background: linear-gradient(135deg, #e0334f, #b8002a) !important;
+    box-shadow: 0 4px 20px rgba(255, 59, 92, 0.4) !important;
+}
+
+/* ===== Mobile Styles ===== */
 @media (max-width: 768px) {
+    header {
+        padding: 0 16px;
+    }
+
     .navbar {
         flex-direction: row;
         align-items: center;
         justify-content: space-between;
+        flex-wrap: wrap;
+        height: auto;
+        padding: 10px 0;
     }
 
     #logo-main {
@@ -88,21 +166,40 @@ header {
         color: #fff;
         cursor: pointer;
         order: 1;
-        /* Ensure hamburger appears after the logo */
+        padding: 4px 8px;
+        border-radius: 6px;
+        transition: background 0.2s;
+    }
+
+    .menu-toggle:hover {
+        background: rgba(255, 255, 255, 0.1);
     }
 
     #logo-in {
         display: none;
     }
 
-    /* Hide nav-links until the hamburger is clicked */
     .nav-links {
         display: none;
         flex-direction: column;
         align-items: center;
         width: 100%;
         order: 3;
-        /* Ensure nav-links appear below the logo and hamburger */
+        gap: 4px;
+        padding: 10px 0;
+        animation: navSlideDown 0.3s ease;
+    }
+
+    @keyframes navSlideDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     .nav-links.active {
@@ -110,20 +207,30 @@ header {
     }
 
     .nav-links li {
-        margin: 10px 0;
+        width: 100%;
+        text-align: center;
     }
 
     .nav-links a {
-        font-size: 18px;
-        text-align: center;
-        width: 58%;
+        font-size: 1rem;
+        display: block;
+        width: 100%;
+        padding: 12px 16px;
+        border-radius: 10px;
+    }
+
+    .nav-links a:hover {
+        background: rgba(255, 255, 255, 0.06);
+    }
+
+    .nav-links a::after {
+        display: none;
     }
 
     .login-btn {
-        background-color: #007aff;
-        padding: 10px 20px;
-        font-size: 16px;
-        text-align: center;
-        width: 100%;
+        width: 100% !important;
+        padding: 12px 20px !important;
+        text-align: center !important;
+        font-size: 0.95rem !important;
     }
 }
