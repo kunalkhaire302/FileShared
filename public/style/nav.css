@@ -78,6 +78,15 @@ header:hover {
     background: rgba(255, 255, 255, 0.08);
 }
 
+#logo-in a:hover,
+#logo-in a {
+    background: none !important;
+}
+
+#logo-in a::after {
+    display: none !important;
+}
+
 /* Active link indicator via common.js */
 .nav-links a[style*="color: rgb(0, 122, 255)"],
 .nav-links a[style*="color:#007aff"] {
