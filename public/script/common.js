@@ -74,13 +74,13 @@ function logout() {
         const userName = getUserName();
 
         if (userName) {
-            if (loginBtn) loginBtn.style.display = 'none';
-            if (logoutBtn) logoutBtn.style.display = 'block';
-            if (dashboardLink) dashboardLink.style.display = 'block';
+            if (loginBtn) loginBtn.parentElement.style.display = 'none';
+            if (logoutBtn) logoutBtn.parentElement.style.display = 'list-item';
+            if (dashboardLink) dashboardLink.parentElement.style.display = 'list-item';
         } else {
-            if (loginBtn) loginBtn.style.display = 'block';
-            if (logoutBtn) logoutBtn.style.display = 'none';
-            if (dashboardLink) dashboardLink.style.display = 'none';
+            if (loginBtn) loginBtn.parentElement.style.display = 'list-item';
+            if (logoutBtn) logoutBtn.parentElement.style.display = 'none';
+            if (dashboardLink) dashboardLink.parentElement.style.display = 'none';
         }
     });
 })();
